@@ -1,4 +1,5 @@
-// injected.js - PAGE context. Bypasses GFG paste/copy/right-click blocking.
+// injected.js - PAGE context. Bypasses paste/copy/right-click blocking.
+// Supports: CodeMirror (GFG), Monaco (LeetCode), ACE (HackerRank), plain inputs.
 (function () {
   var enabled = true;
 
@@ -59,57 +60,87 @@
     if (!evt.data || evt.data.type !== 'PU_CLIPBOARD_TEXT') return;
     var text = evt.data.text;
     if (!text) return;
+    var normalised = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
     var active = document.activeElement;
 
-    // ── CodeMirror FIRST (GFG's code editor) ─────────────────────────────────
-    // The hidden <textarea> inside CodeMirror must NOT be treated as a plain
-    // textarea — we must use CodeMirror's own API so multi-line text works.
-    var cmEl = document.querySelector('.CodeMirror');
-    if (cmEl && cmEl.CodeMirror) {
-      var cm = cmEl.CodeMirror;
-      // Normalise line endings so each \n becomes a real new line in the editor
-      var lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-      cm.replaceSelection(lines, 'end');
-      cm.focus();
-      return;
-    }
-
-    // ── Also check if the active element itself IS inside a CodeMirror wrap ──
-    if (active) {
-      var parent = active.closest && active.closest('.CodeMirror');
-      if (!parent) {
-        // Walk up manually for older browsers
-        var node = active.parentElement;
-        while (node) {
-          if (node.classList && node.classList.contains('CodeMirror')) {
-            parent = node; break;
-          }
-          node = node.parentElement;
-        }
-      }
-      if (parent && parent.CodeMirror) {
-        var cm2 = parent.CodeMirror;
-        cm2.replaceSelection(text.replace(/\r\n/g, '\n').replace(/\r/g, '\n'), 'end');
-        cm2.focus();
+    // ── Monaco Editor (LeetCode, Azure, VS Code Web) ──────────────────────────
+    if (window.monaco && window.monaco.editor) {
+      var monacoEditors = window.monaco.editor.getEditors();
+      if (monacoEditors && monacoEditors.length > 0) {
+        var ed = monacoEditors[0];
+        ed.focus();
+        ed.trigger('keyboard', 'type', { text: normalised });
         return;
       }
     }
 
-    // ── Standard input / textarea (NOT inside CodeMirror) ────────────────────
+    // ── ACE Editor (HackerRank, CodePen, JSFiddle) ────────────────────────────
+    var aceEl = document.querySelector('.ace_editor');
+    if (aceEl && window.ace) {
+      try {
+        var aceEditor = window.ace.edit(aceEl);
+        aceEditor.insert(normalised);
+        aceEditor.focus();
+        return;
+      } catch(x) {}
+    }
+
+    // ── CodeMirror 5 (GFG, HackerEarth, CodeChef) ────────────────────────────
+    var cmEl = document.querySelector('.CodeMirror');
+    if (cmEl && cmEl.CodeMirror) {
+      cmEl.CodeMirror.replaceSelection(normalised, 'end');
+      cmEl.CodeMirror.focus();
+      return;
+    }
+
+    // ── CodeMirror 6 (newer sites) ────────────────────────────────────────────
+    var cm6El = document.querySelector('.cm-editor');
+    if (cm6El) {
+      var cm6View = cm6El.cmView && cm6El.cmView.view;
+      if (cm6View) {
+        try {
+          var tr = cm6View.state.update({
+            changes: {
+              from: cm6View.state.selection.main.from,
+              to:   cm6View.state.selection.main.to,
+              insert: normalised
+            }
+          });
+          cm6View.dispatch(tr);
+          cm6View.focus();
+          return;
+        } catch(x) {}
+      }
+    }
+
+    // ── Walk up from active element: catches any wrapped CodeMirror ───────────
+    if (active) {
+      var node = active;
+      while (node) {
+        if (node.CodeMirror) {
+          node.CodeMirror.replaceSelection(normalised, 'end');
+          node.CodeMirror.focus();
+          return;
+        }
+        node = node.parentElement;
+      }
+    }
+
+    // ── Standard INPUT / TEXTAREA ─────────────────────────────────────────────
     if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
       var s = active.selectionStart || 0;
       var end = active.selectionEnd || 0;
-      active.value = active.value.slice(0, s) + text + active.value.slice(end);
-      active.selectionStart = active.selectionEnd = s + text.length;
+      active.value = active.value.slice(0, s) + normalised + active.value.slice(end);
+      active.selectionStart = active.selectionEnd = s + normalised.length;
       active.dispatchEvent(new Event('input',  { bubbles: true }));
       active.dispatchEvent(new Event('change', { bubbles: true }));
       return;
     }
 
-    // ── contenteditable ───────────────────────────────────────────────────────
+    // ── Contenteditable ───────────────────────────────────────────────────────
     if (active && active.isContentEditable) {
-      document.execCommand('insertText', false, text);
+      document.execCommand('insertText', false, normalised);
       return;
     }
   });

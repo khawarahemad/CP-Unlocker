@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Paste Unlocker",
-  "version": "1.0",
-  "description": "Force-enables paste in text boxes on pages that block it.",
+  "name": "CP Unlocker",
+  "version": "2.0",
+  "description": "Force-enables paste, copy & right-click on GFG, LeetCode, HackerRank and more. Supports CodeMirror, Monaco & ACE editors.",
   "permissions": ["activeTab", "scripting", "storage", "clipboardRead", "clipboardWrite"],
   "host_permissions": ["<all_urls>"],
   "action": {
@@ -12,6 +12,18 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     }
+  },
+  "commands": {
+    "toggle-unlocker": {
+      "suggested_key": {
+        "default": "Alt+Shift+P",
+        "mac": "Alt+Shift+P"
+      },
+      "description": "Toggle CP Unlocker on/off for this tab"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {

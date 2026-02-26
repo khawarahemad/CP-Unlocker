@@ -2,15 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Paste Unlocker</title>
+  <title>CP Unlocker</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      width: 240px;
-      background: #1a1a2e;
+      width: 280px;
+      background: #0f0f1a;
       color: #e0e0e0;
     }
 
@@ -19,127 +18,142 @@
       align-items: center;
       gap: 10px;
       padding: 14px 16px 10px;
-      border-bottom: 1px solid #2a2a4a;
+      border-bottom: 1px solid #1e1e3a;
+      background: #13132a;
     }
+    header img { width: 26px; height: 26px; }
+    header h1 { font-size: 15px; font-weight: 700; color: #fff; letter-spacing: 0.3px; }
+    header .version { font-size: 10px; color: #555; margin-left: auto; }
 
-    header img { width: 28px; height: 28px; }
+    .card { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
 
-    header h1 {
-      font-size: 15px;
-      font-weight: 600;
-      color: #ffffff;
-      letter-spacing: 0.3px;
-    }
-
-    .card {
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .row {
+    /* Domain row */
+    .domain-row {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 8px;
+      background: #1a1a2e;
+      border: 1px solid #2a2a4a;
+      border-radius: 8px;
+      padding: 10px 12px;
     }
-
-    .label {
-      font-size: 13px;
-      color: #b0b0cc;
+    .domain-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #6c63ff;
+      box-shadow: 0 0 6px rgba(108,99,255,0.6);
+      flex-shrink: 0;
     }
+    .domain-dot.off { background: #444; box-shadow: none; }
+    .domain-name { font-size: 12px; color: #aaa; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .domain-name strong { color: #e0e0e0; display: block; font-size: 13px; }
 
     /* Toggle switch */
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 44px;
-      height: 24px;
-    }
-
+    .switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
     .switch input { opacity: 0; width: 0; height: 0; }
-
     .slider {
-      position: absolute;
-      cursor: pointer;
-      inset: 0;
-      background: #3a3a5c;
-      border-radius: 24px;
-      transition: background 0.25s;
+      position: absolute; cursor: pointer; inset: 0;
+      background: #2a2a4a; border-radius: 24px; transition: background 0.2s;
     }
-
     .slider::before {
-      content: "";
-      position: absolute;
-      width: 18px;
-      height: 18px;
-      left: 3px;
-      bottom: 3px;
-      background: #ffffff;
-      border-radius: 50%;
-      transition: transform 0.25s;
+      content: ""; position: absolute;
+      width: 18px; height: 18px; left: 3px; bottom: 3px;
+      background: #fff; border-radius: 50%; transition: transform 0.2s;
     }
-
     input:checked + .slider { background: #6c63ff; }
     input:checked + .slider::before { transform: translateX(20px); }
 
-    .status-badge {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 3px 10px;
-      border-radius: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      background: #2a2a4a;
-      color: #888;
-      transition: all 0.2s;
+    .shortcut-hint {
+      font-size: 10px; color: #555; text-align: center;
+      letter-spacing: 0.3px;
+    }
+    .shortcut-hint kbd {
+      background: #1e1e3a; border: 1px solid #333; border-radius: 4px;
+      padding: 1px 5px; font-size: 10px; color: #888;
     }
 
-    .status-badge.on {
-      background: #1e1e3f;
-      color: #6c63ff;
-      box-shadow: 0 0 8px rgba(108,99,255,0.35);
-    }
+    .divider { height: 1px; background: #1e1e3a; }
 
-    .divider { height: 1px; background: #2a2a4a; }
-
-    .tip {
-      font-size: 11px;
-      color: #666688;
-      line-height: 1.5;
-      text-align: center;
-    }
-
-    .tip span {
-      color: #6c63ff;
+    /* Editor support badges */
+    .badges { display: flex; gap: 6px; flex-wrap: wrap; }
+    .badge {
+      font-size: 10px; padding: 3px 8px; border-radius: 10px;
+      background: #1a1a2e; border: 1px solid #2a2a4a; color: #6c63ff;
       font-weight: 600;
     }
+    .badges-label { font-size: 11px; color: #555; margin-bottom: 4px; }
+
+    /* Disabled domains list */
+    .blocked-header {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 11px; color: #555;
+    }
+    .blocked-header span { font-size: 10px; color: #444; }
+    #domain-list { display: flex; flex-direction: column; gap: 5px; max-height: 120px; overflow-y: auto; }
+    .domain-item {
+      display: flex; align-items: center; justify-content: space-between;
+      background: #1a1a2e; border-radius: 6px; padding: 5px 10px;
+      font-size: 11px; color: #888;
+    }
+    .domain-item button {
+      background: none; border: none; cursor: pointer;
+      color: #444; font-size: 13px; line-height: 1;
+      transition: color 0.15s;
+    }
+    .domain-item button:hover { color: #6c63ff; }
+    .empty-msg { font-size: 11px; color: #333; text-align: center; padding: 6px 0; }
   </style>
 </head>
 <body>
   <header>
     <img src="icons/icon48.png" alt="icon" />
-    <h1>Paste Unlocker</h1>
+    <h1>CP Unlocker</h1>
+    <span class="version">v2.0</span>
   </header>
 
   <div class="card">
-    <div class="row">
-      <span class="label">Enable on this tab</span>
+
+    <!-- Current domain toggle -->
+    <div class="domain-row">
+      <div class="domain-dot" id="dot"></div>
+      <div class="domain-name">
+        <strong id="domain-text">Loading...</strong>
+        this site
+      </div>
       <label class="switch">
         <input type="checkbox" id="toggle" checked />
         <span class="slider"></span>
       </label>
     </div>
 
-    <div class="row" style="justify-content: center;">
-      <span class="status-badge on" id="badge">Active</span>
+    <div class="shortcut-hint">
+      Toggle with <kbd>Alt+Shift+P</kbd> from any tab
     </div>
 
     <div class="divider"></div>
 
-    <p class="tip">
-      Overrides <span>paste-blocking</span> scripts so you can paste freely in any text field.
-    </p>
+    <!-- Editor support -->
+    <div>
+      <div class="badges-label">Works with</div>
+      <div class="badges">
+        <span class="badge">CodeMirror</span>
+        <span class="badge">Monaco</span>
+        <span class="badge">ACE</span>
+        <span class="badge">Textarea</span>
+        <span class="badge">Contenteditable</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Disabled domains list -->
+    <div class="blocked-header">
+      <span>Disabled on</span>
+      <span id="blocked-count">0 sites</span>
+    </div>
+    <div id="domain-list">
+      <div class="empty-msg" id="empty-msg">Enabled on all sites ✓</div>
+    </div>
+
   </div>
 
   <script src="popup.js"></script>
